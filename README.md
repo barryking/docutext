@@ -1,8 +1,8 @@
 # extractly
 
 [![npm version](https://img.shields.io/npm/v/extractly)](https://www.npmjs.com/package/extractly)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/extractly)](https://bundlephobia.com/package/extractly)
-[![license](https://img.shields.io/npm/l/extractly)](./LICENSE)
+[![bundle size](https://img.shields.io/badge/bundle-~24KB_gzip-blue)](https://www.npmjs.com/package/extractly)
+[![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
 Zero-dependency PDF text extraction built for RAG and AI pipelines. Parses PDFs from scratch -- no PDF.js, no WASM, no native addons. Works in Node.js and the browser.
 
@@ -15,7 +15,7 @@ Zero-dependency PDF text extraction built for RAG and AI pipelines. Parses PDFs 
 | pdf-parse | 5 ms | 279 ms | ~780 KB | 1 (pdfjs) |
 | unpdf | 6 ms | 232 ms | ~320 KB | 2 (pdfjs) |
 
-*Median of 3 runs, Node.js, Apple Silicon. Full methodology in [`benchmarks/`](./benchmarks).*
+*Median of 3 runs, Node.js, Apple Silicon.*
 
 extractly is purpose-built for text extraction in RAG/AI workflows -- not a general PDF toolkit. It does one thing and does it fast.
 
