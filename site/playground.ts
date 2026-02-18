@@ -21,6 +21,8 @@ const btnPrev = $<HTMLButtonElement>('pgBtnPrev');
 const btnNext = $<HTMLButtonElement>('pgBtnNext');
 const pageBtns = $('pgPageBtns');
 const pagerInfo = $('pgPagerInfo');
+const copyBtn = $<HTMLButtonElement>('pgCopyBtn');
+const copyLabel = $('pgCopyLabel');
 
 const metaEls = {
   pages: $('pgMetaPages'),
@@ -186,6 +188,23 @@ modeToggle.addEventListener('change', () => {
   render();
 });
 
+let copyTimeout: ReturnType<typeof setTimeout> | null = null;
+
+copyBtn.addEventListener('click', () => {
+  const text = getActiveText();
+  if (!text) return;
+
+  navigator.clipboard.writeText(text).then(() => {
+    copyBtn.classList.add('copied');
+    copyLabel.textContent = 'Copied!';
+    if (copyTimeout) clearTimeout(copyTimeout);
+    copyTimeout = setTimeout(() => {
+      copyBtn.classList.remove('copied');
+      copyLabel.textContent = 'Copy';
+    }, 1500);
+  });
+});
+
 fileInput.addEventListener('change', async (e) => {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (!file) return;
@@ -219,12 +238,14 @@ fileInput.addEventListener('change', async (e) => {
 
     loadingEl.style.display = 'none';
     pager.style.display = 'flex';
+    copyBtn.disabled = false;
     updatePager();
     render();
 
     doc.dispose();
   } catch (err) {
     loadingEl.style.display = 'none';
+    copyBtn.disabled = true;
     showError(`Failed to parse PDF: ${(err as Error).message}`);
     console.error(err);
   }

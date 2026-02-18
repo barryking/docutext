@@ -155,6 +155,17 @@
     .pg-file-btn:hover { background: var(--accent-hover); }
     .pg-file-name { font-size: 13px; color: var(--text-secondary); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pg-toggle { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .pg-copy-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+      background: var(--surface); color: var(--text-secondary);
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: all 0.15s; user-select: none;
+    }
+    .pg-copy-btn:hover:not(:disabled) { color: var(--text); border-color: #c5c9d0; }
+    .pg-copy-btn:disabled { opacity: 0.3; cursor: default; }
+    .pg-copy-btn svg { width: 14px; height: 14px; }
+    .pg-copy-btn.copied { color: #16a34a; border-color: #86efac; }
     .pg-toggle-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); user-select: none; }
     .pg-toggle-label.active { color: var(--text); }
     .pg-toggle-switch { position: relative; width: 36px; height: 20px; }
@@ -493,6 +504,10 @@ console.<span class="fn">log</span>(doc.text);</pre>
         </label>
         <span class="pg-toggle-label" id="pgLabelMd">Markdown</span>
       </div>
+      <button type="button" class="pg-copy-btn" id="pgCopyBtn" title="Copy to clipboard" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span id="pgCopyLabel">Copy</span>
+      </button>
     </div>
     <div class="pg-body">
       <aside class="pg-sidebar">
