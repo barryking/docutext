@@ -6,7 +6,7 @@
  *   npx tsx examples/page-by-page.ts path/to/document.pdf
  */
 
-import { Extractly } from '../src/index.js';
+import { DocuText } from '../src/index.js';
 
 const filePath = process.argv[2];
 
@@ -15,7 +15,7 @@ if (!filePath) {
   process.exit(1);
 }
 
-const doc = await Extractly.load(filePath);
+const doc = await DocuText.load(filePath);
 
 console.log(`Document: ${doc.metadata.title ?? filePath}`);
 console.log(`Total pages: ${doc.pageCount}`);

@@ -1,7 +1,7 @@
 /**
  * PDFPage - represents a single page in a PDF document.
  * Provides lazy text extraction in plain text format.
- * Markdown output is available via the `extractly/markdown` subpath.
+ * Markdown output is available via the `docutext/markdown` subpath.
  */
 
 import type { PdfDict } from './parser/types.js';

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Extractly } from '../../src/index.js';
+import { DocuText } from '../../src/index.js';
 import { PdfUnsupportedError } from '../../src/errors.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -15,7 +15,7 @@ function loadFixture(name: string): Uint8Array {
 describe('indirect /Length resolution', () => {
   it('correctly parses streams with indirect Length references', () => {
     const data = loadFixture('indirect-length.pdf');
-    const doc = Extractly.fromBuffer(data);
+    const doc = DocuText.fromBuffer(data);
     expect(doc.pageCount).toBe(1);
     expect(doc.pages[0].text).toContain('Indirect Length Test');
     expect(doc.pages[0].error).toBeNull();
@@ -25,7 +25,7 @@ describe('indirect /Length resolution', () => {
 describe('encrypted PDF with empty user password', () => {
   it('decrypts and extracts text from AES-128-CBC encrypted PDF', () => {
     const data = loadFixture('encrypted-empty-password.pdf');
-    const doc = Extractly.fromBuffer(data);
+    const doc = DocuText.fromBuffer(data);
     expect(doc.pageCount).toBe(1);
     expect(doc.pages[0].text).toContain('Hello encrypted world');
     expect(doc.pages[0].error).toBeNull();
@@ -58,7 +58,7 @@ describe('encrypted PDF with empty user password', () => {
     parts.push(`startxref\n${xrefOffset}\n%%EOF\n`);
 
     const data = enc.encode(parts.join(''));
-    expect(() => Extractly.fromBuffer(data)).toThrow(PdfUnsupportedError);
-    expect(() => Extractly.fromBuffer(data)).toThrow('Encrypted PDF requires a password');
+    expect(() => DocuText.fromBuffer(data)).toThrow(PdfUnsupportedError);
+    expect(() => DocuText.fromBuffer(data)).toThrow('Encrypted PDF requires a password');
   });
 });

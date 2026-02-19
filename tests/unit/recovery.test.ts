@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Extractly } from '../../src/index.js';
+import { DocuText } from '../../src/index.js';
 import { PdfParseError } from '../../src/errors.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -14,14 +14,14 @@ function loadFixture(name: string): Uint8Array {
 
 describe('xref fallback recovery (full document scan)', () => {
   it('recovers from a bad startxref offset', () => {
-    const doc = Extractly.fromBuffer(loadFixture('bad-xref.pdf'));
+    const doc = DocuText.fromBuffer(loadFixture('bad-xref.pdf'));
     expect(doc.pageCount).toBe(1);
     expect(doc.text).toContain('Bad XRef Recovery Test');
     doc.dispose();
   });
 
   it('extracts correct page count after recovery', () => {
-    const doc = Extractly.fromBuffer(loadFixture('bad-xref.pdf'));
+    const doc = DocuText.fromBuffer(loadFixture('bad-xref.pdf'));
     expect(doc.pageCount).toBe(1);
     expect(doc.pages[0].text).toContain('Bad XRef Recovery Test');
     doc.dispose();
@@ -30,7 +30,7 @@ describe('xref fallback recovery (full document scan)', () => {
 
 describe('/Root in /Prev trailer recovery', () => {
   it('finds /Root in earlier trailer via /Prev chain', () => {
-    const doc = Extractly.fromBuffer(loadFixture('root-in-prev.pdf'));
+    const doc = DocuText.fromBuffer(loadFixture('root-in-prev.pdf'));
     expect(doc.pageCount).toBe(1);
     expect(doc.text).toContain('Root In Prev Test');
     doc.dispose();
@@ -40,7 +40,7 @@ describe('/Root in /Prev trailer recovery', () => {
 describe('unrecoverable PDFs still throw', () => {
   it('throws PdfParseError for completely empty content', () => {
     const data = new TextEncoder().encode('%PDF-1.4\ngarbage without any obj markers\nstartxref\n0\n%%EOF\n');
-    expect(() => Extractly.fromBuffer(data)).toThrow(PdfParseError);
+    expect(() => DocuText.fromBuffer(data)).toThrow(PdfParseError);
   });
 
   it('throws PdfParseError for PDF with no /Root anywhere', () => {
@@ -53,6 +53,6 @@ describe('unrecoverable PDFs still throw', () => {
       'startxref\n9999\n%%EOF\n',
     ];
     const data = enc.encode(parts.join(''));
-    expect(() => Extractly.fromBuffer(data)).toThrow('Trailer missing /Root entry');
+    expect(() => DocuText.fromBuffer(data)).toThrow('Trailer missing /Root entry');
   });
 });

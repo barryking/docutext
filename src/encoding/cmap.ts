@@ -23,12 +23,10 @@ export function parseToUnicodeCMap(data: Uint8Array): ToUnicodeMap {
   return map;
 }
 
+const latin1Decoder = new TextDecoder('latin1');
+
 function bytesToString(data: Uint8Array): string {
-  let result = '';
-  for (let i = 0; i < data.length; i++) {
-    result += String.fromCharCode(data[i]);
-  }
-  return result;
+  return latin1Decoder.decode(data);
 }
 
 /**
@@ -126,28 +124,29 @@ function parseRangeContent(content: string, map: ToUnicodeMap): void {
 function readHexToken(text: string, pos: number): { hex: string; end: number } | null {
   if (pos >= text.length || text[pos] !== '<') return null;
   pos++;
-  let hex = '';
+  const codes: number[] = [];
   while (pos < text.length && text[pos] !== '>') {
-    if (/[0-9A-Fa-f]/.test(text[pos])) {
-      hex += text[pos];
+    const c = text.charCodeAt(pos);
+    if ((c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x46) || (c >= 0x61 && c <= 0x66)) {
+      codes.push(c);
     }
     pos++;
   }
   if (pos < text.length) pos++;
-  return { hex, end: pos };
+  return { hex: String.fromCharCode(...codes), end: pos };
 }
 
 /** Convert a hex string to a Unicode string (groups of 4 hex digits = one code point) */
 function hexToUnicodeString(hex: string): string {
-  let result = '';
   if (hex.length % 4 !== 0) {
     hex = hex.padStart(Math.ceil(hex.length / 4) * 4, '0');
   }
+  const cps: number[] = [];
   for (let i = 0; i < hex.length; i += 4) {
     const cp = parseInt(hex.substring(i, i + 4), 16);
     if (!isNaN(cp)) {
-      result += String.fromCodePoint(cp);
+      cps.push(cp);
     }
   }
-  return result;
+  return String.fromCodePoint(...cps);
 }

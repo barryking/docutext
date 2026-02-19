@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>extractly - PDF text extraction for RAG/AI</title>
+  <title>docutext - PDF text extraction for RAG/AI</title>
   <meta name="description" content="Zero-dependency PDF text extraction built for RAG and AI pipelines. 6x faster, 50x smaller than alternatives." />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -177,6 +177,7 @@
     }
     .pg-copy-btn:hover:not(:disabled) { color: var(--text); border-color: #c5c9d0; }
     .pg-copy-btn:disabled { opacity: 0.3; cursor: default; }
+    .pg-copy-btn:disabled.copied { opacity: 1; }
     .pg-copy-btn svg { width: 14px; height: 14px; }
     .pg-copy-btn.copied { color: #16a34a; border-color: #86efac; }
     .pg-toggle-label { font-size: 12px; font-weight: 500; color: var(--text-secondary); user-select: none; }
@@ -248,9 +249,6 @@
     .pg-md-out h3 { font-size: 1.1em; margin: 0.4em 0 0.2em; }
     .pg-md-out p { margin: 0 0 0.8em; }
     .pg-md-out ul, .pg-md-out ol { padding-left: 1.6em; margin-bottom: 0.8em; }
-    .pg-md-out table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
-    .pg-md-out th, .pg-md-out td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; font-size: 13px; }
-    .pg-md-out th { background: var(--surface); font-weight: 600; }
     .pg-md-out code { background: #e8ecf1; padding: 1px 4px; border-radius: 3px; font-family: var(--mono); font-size: 0.85em; }
     .pg-md-out pre { background: #e8ecf1; padding: 12px; border-radius: 6px; overflow-x: auto; margin-bottom: 0.8em; }
     .pg-md-out pre code { background: none; padding: 0; }
@@ -281,7 +279,7 @@
       }
       .pg-toggle { margin-left: 0; }
       .pg-body { grid-template-columns: 1fr; min-height: auto; }
-      .pg-sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
+      .pg-sidebar { display: none; }
     }
 
     /* SMALL PHONE */
@@ -306,7 +304,6 @@
       .pg-toggle { justify-content: space-between; }
       .pg-copy-btn { align-self: stretch; justify-content: center; }
       .pg-content { padding: 12px; }
-      .pg-sidebar { padding: 12px; }
       .api-item { padding: 12px 14px; }
       .api-sig { font-size: 12px; }
     }
@@ -322,7 +319,7 @@
 
 <nav>
   <div class="nav-inner">
-    <a href="#" class="nav-logo">extractly</a>
+    <a href="#" class="nav-logo">docutext</a>
     <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
       <span></span><span></span><span></span>
     </button>
@@ -330,8 +327,8 @@
       <a href="#benchmarks">Benchmarks</a>
       <a href="#api">API</a>
       <a href="#playground">Playground</a>
-      <a href="https://github.com/barryking/extractly">GitHub</a>
-      <a href="https://www.npmjs.com/package/extractly">npm</a>
+      <a href="https://github.com/barryking/docutext">GitHub</a>
+      <a href="https://www.npmjs.com/package/docutext">npm</a>
     </div>
   </div>
 </nav>
@@ -360,7 +357,7 @@
   <div class="hero-actions">
     <a href="#playground" class="btn btn-primary">Try the Playground</a>
     <div class="install-cmd" id="installCmd">
-      <code><span class="prompt">$</span> npm install extractly</code>
+      <code><span class="prompt">$</span> npm install docutext</code>
       <button type="button" aria-label="Copy to clipboard" class="install-copy" id="installCopy">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
       </button>
@@ -377,7 +374,7 @@
         <tr><th>Library</th><th>Small PDF (31 KB)</th><th>Large PDF (1.3 MB)</th><th>Bundle (gzip)</th><th>Deps</th></tr>
       </thead>
       <tbody>
-        <tr><td>extractly</td><td>3 ms</td><td>40 ms</td><td>~24 KB</td><td>0</td></tr>
+        <tr><td>docutext</td><td>3 ms</td><td>40 ms</td><td>~24 KB</td><td>0</td></tr>
         <tr><td>pdfjs-dist</td><td>5 ms</td><td>244 ms</td><td>~1.3 MB</td><td>0 (large)</td></tr>
         <tr><td>pdf-parse</td><td>5 ms</td><td>279 ms</td><td>~780 KB</td><td>1</td></tr>
         <tr><td>unpdf</td><td>6 ms</td><td>232 ms</td><td>~320 KB</td><td>2</td></tr>
@@ -392,30 +389,30 @@
   <h2>Quick Start</h2>
   <div class="code-block">
     <h3>Install</h3>
-    <pre>npm install extractly</pre>
+    <pre>npm install docutext</pre>
   </div>
   <div class="code-block">
     <h3>Plain text</h3>
-    <pre><span class="kw">import</span> { <span class="fn">Extractly</span> } <span class="kw">from</span> <span class="str">'extractly'</span>;
+    <pre><span class="kw">import</span> { <span class="fn">DocuText</span> } <span class="kw">from</span> <span class="str">'docutext'</span>;
 
-<span class="kw">const</span> doc = <span class="kw">await</span> <span class="fn">Extractly</span>.<span class="fn">load</span>(<span class="str">'document.pdf'</span>);
+<span class="kw">const</span> doc = <span class="kw">await</span> <span class="fn">DocuText</span>.<span class="fn">load</span>(<span class="str">'document.pdf'</span>);
 console.<span class="fn">log</span>(doc.text);</pre>
   </div>
   <div class="code-block">
     <h3>Structured Markdown</h3>
-    <pre><span class="kw">import</span> { <span class="fn">Extractly</span> } <span class="kw">from</span> <span class="str">'extractly'</span>;
-<span class="kw">import</span> { <span class="fn">docToMarkdown</span> } <span class="kw">from</span> <span class="str">'extractly/markdown'</span>;
+    <pre><span class="kw">import</span> { <span class="fn">DocuText</span> } <span class="kw">from</span> <span class="str">'docutext'</span>;
+<span class="kw">import</span> { <span class="fn">docToMarkdown</span> } <span class="kw">from</span> <span class="str">'docutext/markdown'</span>;
 
-<span class="kw">const</span> doc = <span class="kw">await</span> <span class="fn">Extractly</span>.<span class="fn">load</span>(<span class="str">'document.pdf'</span>);
-console.<span class="fn">log</span>(<span class="fn">docToMarkdown</span>(doc)); <span class="cmt">// headings, bold, tables, links</span></pre>
+<span class="kw">const</span> doc = <span class="kw">await</span> <span class="fn">DocuText</span>.<span class="fn">load</span>(<span class="str">'document.pdf'</span>);
+console.<span class="fn">log</span>(<span class="fn">docToMarkdown</span>(doc)); <span class="cmt">// headings, bold, links</span></pre>
   </div>
   <div class="code-block">
     <h3>Browser</h3>
-    <pre><span class="kw">import</span> { <span class="fn">Extractly</span> } <span class="kw">from</span> <span class="str">'extractly'</span>; <span class="cmt">// auto-resolves browser entry</span>
+    <pre><span class="kw">import</span> { <span class="fn">DocuText</span> } <span class="kw">from</span> <span class="str">'docutext'</span>; <span class="cmt">// auto-resolves browser entry</span>
 
 <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'/document.pdf'</span>);
 <span class="kw">const</span> bytes = <span class="kw">new</span> <span class="fn">Uint8Array</span>(<span class="kw">await</span> res.<span class="fn">arrayBuffer</span>());
-<span class="kw">const</span> doc = <span class="fn">Extractly</span>.<span class="fn">fromBuffer</span>(bytes);
+<span class="kw">const</span> doc = <span class="fn">DocuText</span>.<span class="fn">fromBuffer</span>(bytes);
 console.<span class="fn">log</span>(doc.text);</pre>
   </div>
 </section>
@@ -438,7 +435,7 @@ console.<span class="fn">log</span>(doc.text);</pre>
     </div>
     <div class="feature-card">
       <h3>Markdown Output</h3>
-      <p>Opt-in structured markdown with inferred headings, bold/italic, tables, and link extraction.</p>
+      <p>Opt-in structured markdown with inferred headings, bold/italic, link extraction, and column-aware text flow.</p>
     </div>
     <div class="feature-card">
       <h3>Lazy Processing</h3>
@@ -464,13 +461,13 @@ console.<span class="fn">log</span>(doc.text);</pre>
   <h2>API Reference</h2>
 
   <div class="api-group">
-    <h3>Extractly</h3>
+    <h3>DocuText</h3>
     <div class="api-item">
-      <div class="api-sig">static Extractly.load(path: string, options?: LoadOptions): Promise&lt;Extractly&gt;</div>
+      <div class="api-sig">static DocuText.load(path: string, options?: LoadOptions): Promise&lt;DocuText&gt;</div>
       <div class="api-desc">Load a PDF from a file path (Node.js only).</div>
     </div>
     <div class="api-item">
-      <div class="api-sig">static Extractly.fromBuffer(data: Uint8Array, options?: LoadOptions): Extractly</div>
+      <div class="api-sig">static DocuText.fromBuffer(data: Uint8Array, options?: LoadOptions): DocuText</div>
       <div class="api-desc">Parse a PDF from a byte array. Works in both Node.js and browser.</div>
     </div>
     <div class="api-item">
@@ -520,9 +517,9 @@ console.<span class="fn">log</span>(doc.text);</pre>
   </div>
 
   <div class="api-group">
-    <h3>extractly/markdown</h3>
+    <h3>docutext/markdown</h3>
     <div class="api-item">
-      <div class="api-sig">docToMarkdown(doc: Extractly, separator?: string): string</div>
+      <div class="api-sig">docToMarkdown(doc: DocuText, separator?: string): string</div>
       <div class="api-desc">Convert an entire document to structured markdown.</div>
     </div>
     <div class="api-item">
@@ -548,7 +545,7 @@ console.<span class="fn">log</span>(doc.text);</pre>
 <section id="playground">
   <h2>Playground</h2>
   <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 14px;">
-    Open a PDF to see extractly in action. Toggle between plain text and structured markdown output.
+    Open a PDF to see docutext in action. Toggle between plain text and structured markdown output.
     All processing happens locally in your browser -- no files are uploaded.
   </p>
   <div class="playground-wrap">
@@ -608,7 +605,7 @@ console.<span class="fn">log</span>(doc.text);</pre>
 </section>
 
 <footer>
-  extractly &middot; MIT License &middot; <a href="https://github.com/barryking/extractly">GitHub</a>
+  docutext &middot; MIT License &middot; <a href="https://github.com/barryking/docutext">GitHub</a>
 </footer>
 
 <script>
@@ -634,7 +631,7 @@ console.<span class="fn">log</span>(doc.text);</pre>
   }
 
   cmd.addEventListener('click', function() {
-    navigator.clipboard.writeText('npm install extractly').then(function() {
+    navigator.clipboard.writeText('npm install docutext').then(function() {
       var check = makeCheckSvg();
       btn.replaceChild(check, btn.firstElementChild);
       setTimeout(function() {

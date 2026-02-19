@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Extractly } from '../../src/index.js';
+import { DocuText } from '../../src/index.js';
 import { PdfParseError, PdfUnsupportedError } from '../../src/errors.js';
 import { parseToUnicodeCMap } from '../../src/encoding/cmap.js';
 import { applyPNGPredictor, flateDecode } from '../../src/stream/filters.js';
@@ -18,7 +18,7 @@ function loadFixture(name: string): Uint8Array {
 
 describe('circular reference protection', () => {
   it('does not crash on deeply nested indirect refs', () => {
-    const doc = Extractly.fromBuffer(loadFixture('simple.pdf'));
+    const doc = DocuText.fromBuffer(loadFixture('simple.pdf'));
     expect(doc.pageCount).toBe(1);
     doc.dispose();
   });
@@ -70,8 +70,8 @@ describe('encrypted PDF detection', () => {
     parts.push(`startxref\n${xrefOffset}\n%%EOF\n`);
 
     const data = enc.encode(parts.join(''));
-    expect(() => Extractly.fromBuffer(data)).toThrow(PdfUnsupportedError);
-    expect(() => Extractly.fromBuffer(data)).toThrow('Encrypted PDF');
+    expect(() => DocuText.fromBuffer(data)).toThrow(PdfUnsupportedError);
+    expect(() => DocuText.fromBuffer(data)).toThrow('Encrypted PDF');
   });
 });
 
@@ -124,13 +124,13 @@ describe('assembler sort stability', () => {
 
 describe('object stream (ObjStm) support', () => {
   it('loads xref-stream.pdf without crashing', () => {
-    const doc = Extractly.fromBuffer(loadFixture('xref-stream.pdf'));
+    const doc = DocuText.fromBuffer(loadFixture('xref-stream.pdf'));
     expect(doc).toBeDefined();
     doc.dispose();
   });
 
   it('loads simple.pdf and extracts text (validates core object resolution)', () => {
-    const doc = Extractly.fromBuffer(loadFixture('simple.pdf'));
+    const doc = DocuText.fromBuffer(loadFixture('simple.pdf'));
     expect(doc.pageCount).toBe(1);
     expect(doc.text).toContain('Hello World');
     doc.dispose();

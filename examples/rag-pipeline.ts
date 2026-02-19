@@ -6,7 +6,7 @@
  *   npx tsx examples/rag-pipeline.ts path/to/document.pdf
  */
 
-import { Extractly } from '../src/index.js';
+import { DocuText } from '../src/index.js';
 import type { DocumentMetadata } from '../src/types.js';
 
 const filePath = process.argv[2];
@@ -18,7 +18,7 @@ if (!filePath) {
 
 // ─── Step 1: Extract ───
 
-const doc = await Extractly.load(filePath);
+const doc = await DocuText.load(filePath);
 
 console.log('Step 1: Extraction');
 console.log(`  Pages: ${doc.pageCount}`);

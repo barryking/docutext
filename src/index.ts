@@ -1,11 +1,11 @@
 /**
- * extractly - Zero-dependency TypeScript PDF text extraction for RAG and AI pipelines
+ * docutext - Zero-dependency TypeScript PDF text extraction for RAG and AI pipelines
  *
  * @example
  * ```typescript
- * import { Extractly } from 'extractly';
+ * import { DocuText } from 'docutext';
  *
- * const doc = await Extractly.load('document.pdf');
+ * const doc = await DocuText.load('document.pdf');
  *
  * // Full text
  * console.log(doc.text);
@@ -46,9 +46,9 @@ setCryptoImpl(
   },
 );
 
-export { Extractly } from './document.js';
+export { DocuText } from './document.js';
 export { PDFPage } from './page.js';
-export { ExtractlyError, PdfParseError, PdfUnsupportedError } from './errors.js';
+export { DocuTextError, PdfParseError, PdfUnsupportedError } from './errors.js';
 export type {
   DocumentMetadata,
   TextItem,

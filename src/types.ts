@@ -1,5 +1,5 @@
 /**
- * Public types for the extractly library.
+ * Public types for the docutext library.
  */
 
 /** Metadata extracted from the PDF document info dictionary */

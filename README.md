@@ -1,7 +1,7 @@
-# extractly
+# docutext
 
-[![npm version](https://img.shields.io/npm/v/extractly)](https://www.npmjs.com/package/extractly)
-[![bundle size](https://img.shields.io/badge/bundle-~24KB_gzip-blue)](https://www.npmjs.com/package/extractly)
+[![npm version](https://img.shields.io/npm/v/docutext)](https://www.npmjs.com/package/docutext)
+[![bundle size](https://img.shields.io/badge/bundle-~24KB_gzip-blue)](https://www.npmjs.com/package/docutext)
 [![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
 
 Zero-dependency PDF text extraction built for RAG and AI pipelines. Parses PDFs from scratch -- no PDF.js, no WASM, no native addons. Works in Node.js and the browser.
@@ -10,23 +10,23 @@ Zero-dependency PDF text extraction built for RAG and AI pipelines. Parses PDFs 
 
 | Library | Small PDF (31 KB) | Large PDF (1.3 MB) | Bundle (gzip) | Dependencies |
 |---------|------------------:|-------------------:|--------------:|:-------------|
-| **extractly** | **3 ms** | **40 ms** | **~24 KB** | **0** |
+| **docutext** | **3 ms** | **40 ms** | **~24 KB** | **0** |
 | pdfjs-dist | 5 ms | 244 ms | ~1.3 MB | 0 (but large) |
 | pdf-parse | 5 ms | 279 ms | ~780 KB | 1 (pdfjs) |
 | unpdf | 6 ms | 232 ms | ~320 KB | 2 (pdfjs) |
 
 *Median of 3 runs, Node.js, Apple Silicon.*
 
-extractly is purpose-built for text extraction in RAG/AI workflows -- not a general PDF toolkit. It does one thing and does it fast.
+docutext is purpose-built for text extraction in RAG/AI workflows -- not a general PDF toolkit. It does one thing and does it fast.
 
 ## Install
 
 ```bash
 # Node.js (zero dependencies)
-pnpm add extractly
+pnpm add docutext
 
 # Browser / bundler (add fflate for decompression, ~3 KB gzip)
-pnpm add extractly fflate
+pnpm add docutext fflate
 ```
 
 Requires Node.js 18+. Browser builds target ES2020+.
@@ -34,31 +34,31 @@ Requires Node.js 18+. Browser builds target ES2020+.
 ## Quick Start
 
 ```typescript
-import { Extractly } from 'extractly';
+import { DocuText } from 'docutext';
 
-const doc = await Extractly.load('document.pdf');
+const doc = await DocuText.load('document.pdf');
 console.log(doc.text);
 ```
 
 ### Structured Markdown
 
 ```typescript
-import { Extractly } from 'extractly';
-import { docToMarkdown, pageToMarkdown } from 'extractly/markdown';
+import { DocuText } from 'docutext';
+import { docToMarkdown, pageToMarkdown } from 'docutext/markdown';
 
-const doc = await Extractly.load('document.pdf');
-console.log(docToMarkdown(doc));       // headings, bold, tables, links
+const doc = await DocuText.load('document.pdf');
+console.log(docToMarkdown(doc));       // headings, bold, links
 console.log(pageToMarkdown(doc.pages[0]));
 ```
 
 ### Browser
 
 ```typescript
-import { Extractly } from 'extractly';
+import { DocuText } from 'docutext';
 
 const response = await fetch('/document.pdf');
 const bytes = new Uint8Array(await response.arrayBuffer());
-const doc = Extractly.fromBuffer(bytes);
+const doc = DocuText.fromBuffer(bytes);
 console.log(doc.text);
 ```
 
@@ -75,7 +75,8 @@ for (const page of doc) {
 - **Zero dependencies** in Node.js. Single optional peer dep (fflate) for browser.
 - **~24 KB gzipped** -- 50x smaller than pdfjs-dist.
 - **6x faster** than alternatives on real-world documents.
-- **Plain text + structured markdown** output (headings inferred from font size, bold/italic, tables, links).
+- **Plain text + structured markdown** output (headings inferred from font size, bold/italic, links).
+- **Column-aware text flow** -- side-by-side columns (e.g. signature blocks) are read column-first to keep related data together.
 - **Lazy extraction** -- accessing `page.text` only processes that page.
 - **Full PDF parsing** -- xref tables, stream filters, font encodings, ToUnicode CMaps, form XObjects.
 - **Encrypted PDF support** -- handles permission-encrypted PDFs (empty password, RC4/AES-128).
@@ -85,7 +86,7 @@ for (const page of doc) {
 
 ## Documentation
 
-For the full API reference, architecture details, and a live playground, see the **[documentation site](https://barryking.github.io/extractly/)**.
+For the full API reference, architecture details, and a live playground, see the **[documentation site](https://barryking.github.io/docutext/)**.
 
 ## License
 

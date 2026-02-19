@@ -275,57 +275,55 @@ export class PdfLexer {
 
   private readName(startOffset: number): Token {
     this.pos++; // skip /
-    let name = '';
+    const codes: number[] = [];
 
     while (this.pos < this.data.length) {
       const c = this.data[this.pos];
       if (isWhitespace(c) || isDelimiter(c)) break;
 
       if (c === 0x23 && this.pos + 2 < this.data.length) {
-        // #XX hex escape in names
         const h1 = this.data[this.pos + 1];
         const h2 = this.data[this.pos + 2];
         if (isHexDigit(h1) && isHexDigit(h2)) {
-          name += String.fromCharCode((hexVal(h1) << 4) | hexVal(h2));
+          codes.push((hexVal(h1) << 4) | hexVal(h2));
           this.pos += 3;
           continue;
         }
       }
 
-      name += String.fromCharCode(c);
+      codes.push(c);
       this.pos++;
     }
 
-    return { type: TokenType.Name, value: name, offset: startOffset };
+    return { type: TokenType.Name, value: String.fromCharCode(...codes), offset: startOffset };
   }
 
   private readNumber(startOffset: number): Token {
-    let numStr = '';
+    const codes: number[] = [];
     let isReal = false;
 
-    // Sign
     if (this.data[this.pos] === 0x2d || this.data[this.pos] === 0x2b) {
-      numStr += String.fromCharCode(this.data[this.pos++]);
+      codes.push(this.data[this.pos++]);
     }
 
     while (this.pos < this.data.length) {
       const c = this.data[this.pos];
       if (isDigit(c)) {
-        numStr += String.fromCharCode(c);
+        codes.push(c);
         this.pos++;
       } else if (c === 0x2e && !isReal) {
         isReal = true;
-        numStr += '.';
+        codes.push(0x2e);
         this.pos++;
       } else {
         break;
       }
     }
 
+    const numStr = String.fromCharCode(...codes);
     const value = isReal ? parseFloat(numStr) : parseInt(numStr, 10);
 
     if (isNaN(value)) {
-      // Not actually a number, treat as keyword
       return this.readKeyword(startOffset);
     }
 
@@ -333,14 +331,16 @@ export class PdfLexer {
   }
 
   private readKeyword(startOffset: number): Token {
-    let word = '';
+    const codes: number[] = [];
 
     while (this.pos < this.data.length) {
       const c = this.data[this.pos];
       if (isWhitespace(c) || isDelimiter(c)) break;
-      word += String.fromCharCode(c);
+      codes.push(c);
       this.pos++;
     }
+
+    const word = String.fromCharCode(...codes);
 
     if (word === 'true') {
       return { type: TokenType.Bool, value: true, offset: startOffset };
@@ -357,7 +357,7 @@ export class PdfLexer {
 
   /** Read a line of bytes ending at LF or CRLF, returning the content without the line ending. */
   readLine(): string {
-    let line = '';
+    const codes: number[] = [];
     while (this.pos < this.data.length) {
       const c = this.data[this.pos++];
       if (c === 0x0a) break;
@@ -365,9 +365,9 @@ export class PdfLexer {
         if (this.pos < this.data.length && this.data[this.pos] === 0x0a) this.pos++;
         break;
       }
-      line += String.fromCharCode(c);
+      codes.push(c);
     }
-    return line;
+    return String.fromCharCode(...codes);
   }
 
   /** Get the raw bytes from the buffer */

@@ -10,47 +10,20 @@
  */
 
 import type { StructuredLine } from './assembler.js';
-import type { TextItem, TextSpan } from '../types.js';
-import { detectTables, renderTableAsMarkdown, type TableBlock } from './tables.js';
+import type { TextSpan } from '../types.js';
 
 /**
- * Convert structured lines to markdown, with optional table detection.
+ * Convert structured lines to markdown.
  */
-export function toMarkdown(lines: StructuredLine[], textItems?: TextItem[]): string {
+export function toMarkdown(lines: StructuredLine[]): string {
   if (lines.length === 0) return '';
-
-  // Detect tables from raw text items if available
-  const tables = textItems ? detectTables(textItems) : [];
-  const tableYRanges = tables.map(t => ({ yStart: t.yStart, yEnd: t.yEnd, table: t }));
 
   const bodyFontSize = detectBodyFontSize(lines);
   const result: string[] = [];
 
-  // Track which tables have been rendered (by index)
-  const renderedTables = new Set<number>();
-
   for (const line of lines) {
     const trimmed = line.text.trim();
     if (!trimmed) continue;
-
-    // Check if this line falls within a table region
-    const tableIdx = tableYRanges.findIndex(
-      tr => line.y <= tr.yStart + 1 && line.y >= tr.yEnd - 1,
-    );
-
-    if (tableIdx >= 0 && !renderedTables.has(tableIdx)) {
-      // Render the table and mark it as done
-      renderedTables.add(tableIdx);
-      if (result.length > 0 && result[result.length - 1] !== '') {
-        result.push('');
-      }
-      result.push(renderTableAsMarkdown(tableYRanges[tableIdx].table));
-      result.push('');
-      continue;
-    } else if (tableIdx >= 0) {
-      // Already rendered this table -- skip remaining lines in its region
-      continue;
-    }
 
     const headingLevel = inferHeadingLevel(line.fontSize, bodyFontSize);
 
@@ -78,13 +51,11 @@ export function toMarkdown(lines: StructuredLine[], textItems?: TextItem[]): str
 function renderSpans(spans: TextSpan[]): string {
   if (!spans || spans.length === 0) return '';
 
-  // Check if ALL spans have the same style (avoid wrapping entire line)
   const allBold = spans.every(s => s.bold);
   const allItalic = spans.every(s => s.italic);
   const hasAnyFormatting = spans.some(s => s.bold || s.italic || s.link);
 
   if (!hasAnyFormatting) {
-    // No formatting -- apply URL detection on plain text
     return autoLinkUrls(spans.map(s => s.text).join('').trim());
   }
 
@@ -93,36 +64,31 @@ function renderSpans(spans: TextSpan[]): string {
     let text = span.text;
     if (!text) continue;
 
-    // Wrap links
     if (span.link) {
       const linkText = text.trim();
       if (linkText) {
         text = `[${linkText}](${span.link})`;
-        // Add surrounding whitespace back
         if (span.text.startsWith(' ')) text = ' ' + text;
         if (span.text.endsWith(' ')) text = text + ' ';
       }
     }
 
-    // Apply bold/italic only if not uniform across all spans
     if (span.bold && !allBold) {
       text = wrapInline(text, '**');
     }
     if (span.italic && !allItalic) {
       text = wrapInline(text, '*');
     }
-  
+
     out += text;
   }
 
   const trimmed = out.trim();
 
-  // If the entire line is bold or italic (uniform), wrap the whole thing
   if (allBold && allItalic) return `***${trimmed}***`;
   if (allBold) return `**${trimmed}**`;
   if (allItalic) return `*${trimmed}*`;
 
-  // Apply URL auto-detection on sections without explicit links
   if (!spans.some(s => s.link)) {
     return autoLinkUrls(trimmed);
   }
@@ -208,7 +174,7 @@ function isLikelyHeading(text: string): boolean {
  * Detect list items (bullet points, numbered lists).
  */
 function isLikelyListItem(text: string): boolean {
-  return /^[\u2022\u2023\u25E6\u2043\u2219•\-\*]\s/.test(text) ||
+  return /^[\u2022\u2023\u25E6\u2043\u2219\uF0B7•\-\*]\s/.test(text) ||
          /^\d{1,3}[.)]\s/.test(text) ||
          /^[a-z][.)]\s/i.test(text);
 }
@@ -219,7 +185,7 @@ function isLikelyListItem(text: string): boolean {
 function formatListItem(text: string): string {
   if (/^[\-\*]\s/.test(text)) return text;
 
-  if (/^[\u2022\u2023\u25E6\u2043\u2219•]\s/.test(text)) {
+  if (/^[\u2022\u2023\u25E6\u2043\u2219\uF0B7•]\s/.test(text)) {
     return `- ${text.substring(2)}`;
   }
 

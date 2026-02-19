@@ -323,13 +323,13 @@ export function decodeTextString(bytes: Uint8Array, font: FontInfo): string {
     return decodeIdentity(bytes);
   }
 
-  let result = '';
+  const codes: number[] = [];
   for (const b of bytes) {
     if (b >= 0x20) {
-      result += String.fromCharCode(b);
+      codes.push(b);
     }
   }
-  return result;
+  return String.fromCharCode(...codes);
 }
 
 function decodeWithToUnicode(
@@ -337,30 +337,30 @@ function decodeWithToUnicode(
   toUnicode: ToUnicodeMap,
   isIdentity: boolean,
 ): string {
-  let result = '';
+  const parts: string[] = [];
 
   if (isIdentity && bytes.length % 2 === 0) {
     for (let i = 0; i < bytes.length; i += 2) {
       const code = (bytes[i] << 8) | bytes[i + 1];
       const mapped = toUnicode.get(code);
       if (mapped) {
-        result += mapped;
+        parts.push(mapped);
       } else if (code >= 0x20) {
-        result += String.fromCodePoint(code);
+        parts.push(String.fromCodePoint(code));
       }
     }
   } else {
     for (const b of bytes) {
       const mapped = toUnicode.get(b);
       if (mapped) {
-        result += mapped;
+        parts.push(mapped);
       } else if (b >= 0x20) {
-        result += String.fromCharCode(b);
+        parts.push(String.fromCharCode(b));
       }
     }
   }
 
-  return result;
+  return parts.join('');
 }
 
 function decodeWithEncoding(
@@ -368,7 +368,7 @@ function decodeWithEncoding(
   encoding: readonly number[] | null,
   differences: Map<number, string> | null,
 ): string {
-  let result = '';
+  const parts: string[] = [];
 
   for (const b of bytes) {
     if (differences) {
@@ -376,7 +376,7 @@ function decodeWithEncoding(
       if (glyphName) {
         const unicode = glyphNameToUnicode(glyphName);
         if (unicode) {
-          result += unicode;
+          parts.push(unicode);
           continue;
         }
       }
@@ -385,34 +385,34 @@ function decodeWithEncoding(
     if (encoding) {
       const cp = encoding[b];
       if (cp > 0) {
-        result += String.fromCodePoint(cp);
+        parts.push(String.fromCodePoint(cp));
         continue;
       }
     }
 
     if (b >= 0x20 && b <= 0x7e) {
-      result += String.fromCharCode(b);
+      parts.push(String.fromCharCode(b));
     }
   }
 
-  return result;
+  return parts.join('');
 }
 
 function decodeIdentity(bytes: Uint8Array): string {
-  let result = '';
+  const parts: string[] = [];
   if (bytes.length % 2 === 0) {
     for (let i = 0; i < bytes.length; i += 2) {
       const code = (bytes[i] << 8) | bytes[i + 1];
       if (code >= 0x20) {
-        result += String.fromCodePoint(code);
+        parts.push(String.fromCodePoint(code));
       }
     }
   } else {
     for (const b of bytes) {
       if (b >= 0x20) {
-        result += String.fromCharCode(b);
+        parts.push(String.fromCharCode(b));
       }
     }
   }
-  return result;
+  return parts.join('');
 }

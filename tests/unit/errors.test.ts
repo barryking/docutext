@@ -1,21 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import {
-  ExtractlyError,
+  DocuTextError,
   PdfParseError,
   PdfUnsupportedError,
 } from '../../src/errors.js';
-import { Extractly } from '../../src/index.js';
+import { DocuText } from '../../src/index.js';
 
-describe('ExtractlyError', () => {
-  it('PdfParseError is instanceof ExtractlyError and Error', () => {
+describe('DocuTextError', () => {
+  it('PdfParseError is instanceof DocuTextError and Error', () => {
     const err = new PdfParseError('test');
-    expect(err).toBeInstanceOf(ExtractlyError);
+    expect(err).toBeInstanceOf(DocuTextError);
     expect(err).toBeInstanceOf(Error);
   });
 
-  it('PdfUnsupportedError is instanceof ExtractlyError and Error', () => {
+  it('PdfUnsupportedError is instanceof DocuTextError and Error', () => {
     const err = new PdfUnsupportedError('test');
-    expect(err).toBeInstanceOf(ExtractlyError);
+    expect(err).toBeInstanceOf(DocuTextError);
     expect(err).toBeInstanceOf(Error);
   });
 
@@ -29,9 +29,9 @@ describe('ExtractlyError', () => {
     expect(err.offset).toBeUndefined();
   });
 
-  it('error.name is correct for ExtractlyError', () => {
-    const err = new ExtractlyError('test');
-    expect(err.name).toBe('ExtractlyError');
+  it('error.name is correct for DocuTextError', () => {
+    const err = new DocuTextError('test');
+    expect(err.name).toBe('DocuTextError');
   });
 
   it('error.name is correct for PdfParseError', () => {
@@ -47,13 +47,13 @@ describe('ExtractlyError', () => {
 
 describe('invalid PDF loading', () => {
   it('loading garbage bytes throws PdfParseError', () => {
-    expect(() => Extractly.fromBuffer(new Uint8Array([1, 2, 3]))).toThrow(
+    expect(() => DocuText.fromBuffer(new Uint8Array([1, 2, 3]))).toThrow(
       PdfParseError,
     );
   });
 
   it('loading truncated PDF (just %PDF-1.4) throws PdfParseError', () => {
     const truncated = new TextEncoder().encode('%PDF-1.4');
-    expect(() => Extractly.fromBuffer(truncated)).toThrow(PdfParseError);
+    expect(() => DocuText.fromBuffer(truncated)).toThrow(PdfParseError);
   });
 });

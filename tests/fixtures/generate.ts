@@ -138,10 +138,10 @@ function generateWithMetadata(): void {
   builder.addObject(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
   builder.addObject(6,
     '<< /Title (Test Document)\n' +
-    '   /Author (extractly Test Suite)\n' +
+    '   /Author (docutext Test Suite)\n' +
     '   /Subject (Testing metadata extraction)\n' +
-    '   /Creator (extractly fixture generator)\n' +
-    '   /Producer (extractly) >>');
+    '   /Creator (docutext fixture generator)\n' +
+    '   /Producer (docutext) >>');
   builder.setInfo('6 0 R');
 
   save('metadata.pdf', builder.build());

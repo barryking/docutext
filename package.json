@@ -1,6 +1,6 @@
 {
-  "name": "extractly",
-  "version": "0.1.0",
+  "name": "docutext",
+  "version": "1.0.1",
   "description": "Zero-dependency TypeScript PDF text extraction for RAG and AI pipelines",
   "type": "module",
   "module": "./dist/index.js",
@@ -60,11 +60,11 @@
   "author": "Barry King (https://github.com/barryking)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/barryking/extractly.git"
+    "url": "git+https://github.com/barryking/docutext.git"
   },
-  "homepage": "https://barryking.github.io/extractly/",
+  "homepage": "https://barryking.github.io/docutext/",
   "bugs": {
-    "url": "https://github.com/barryking/extractly/issues"
+    "url": "https://github.com/barryking/docutext/issues"
   },
   "license": "MIT",
   "engines": {

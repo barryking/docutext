@@ -12,6 +12,6 @@ export function setInflate(fn: InflateFn): void {
 }
 
 export function inflate(data: Uint8Array): Uint8Array {
-  if (!impl) throw new Error('No inflate implementation configured. Import from "extractly" or "extractly/browser".');
+  if (!impl) throw new Error('No inflate implementation configured. Import from "docutext" or "docutext/browser".');
   return impl(data);
 }

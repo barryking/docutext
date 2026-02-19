@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Extractly } from '../../src/index.js';
+import { DocuText } from '../../src/index.js';
 import { docToMarkdown, pageToMarkdown } from '../../src/markdown-entry.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,38 +12,38 @@ function loadFixture(name: string): Uint8Array {
   return new Uint8Array(readFileSync(join(fixturesDir, name)));
 }
 
-describe('Extractly - Document API', () => {
+describe('DocuText - Document API', () => {
   describe('loading', () => {
     it('loads from a Uint8Array', async () => {
       const data = loadFixture('simple.pdf');
-      const doc = await Extractly.load(data);
-      expect(doc).toBeInstanceOf(Extractly);
+      const doc = await DocuText.load(data);
+      expect(doc).toBeInstanceOf(DocuText);
     });
 
     it('loads from a file path', async () => {
       const path = join(fixturesDir, 'simple.pdf');
-      const doc = await Extractly.load(path);
-      expect(doc).toBeInstanceOf(Extractly);
+      const doc = await DocuText.load(path);
+      expect(doc).toBeInstanceOf(DocuText);
     });
 
     it('loads synchronously from buffer', () => {
       const data = loadFixture('simple.pdf');
-      const doc = Extractly.fromBuffer(data);
-      expect(doc).toBeInstanceOf(Extractly);
+      const doc = DocuText.fromBuffer(data);
+      expect(doc).toBeInstanceOf(DocuText);
     });
   });
 
   describe('text extraction', () => {
     it('extracts text from a simple PDF', async () => {
       const data = loadFixture('simple.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       expect(doc.text).toContain('Hello World');
     });
 
     it('extracts text from each page separately', async () => {
       const data = loadFixture('multipage.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       expect(doc.pageCount).toBe(2);
       expect(doc.pages[0].text).toContain('Page One');
@@ -52,7 +52,7 @@ describe('Extractly - Document API', () => {
 
     it('concatenates page text with separator', async () => {
       const data = loadFixture('multipage.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       expect(doc.text).toContain('Page One');
       expect(doc.text).toContain('Page Two');
@@ -60,14 +60,14 @@ describe('Extractly - Document API', () => {
 
     it('uses custom page separator', async () => {
       const data = loadFixture('multipage.pdf');
-      const doc = await Extractly.load(data, { pageSeparator: '\n---\n' });
+      const doc = await DocuText.load(data, { pageSeparator: '\n---\n' });
 
       expect(doc.text).toContain('---');
     });
 
     it('handles TJ operator text', async () => {
       const data = loadFixture('tj-array.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       const text = doc.text;
       expect(text).toContain('H');
@@ -77,7 +77,7 @@ describe('Extractly - Document API', () => {
 
     it('returns empty text for empty pages', async () => {
       const data = loadFixture('empty.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       expect(doc.text).toBe('');
       expect(doc.pages[0].text).toBe('');
@@ -85,7 +85,7 @@ describe('Extractly - Document API', () => {
 
     it('does not insert spurious spaces in per-character-positioned text', async () => {
       const data = loadFixture('char-positioned.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       const text = doc.text;
       // "Amount" must not be split as "Am ount" or similar
@@ -103,7 +103,7 @@ describe('Extractly - Document API', () => {
 
     it('preserves word boundaries in per-character-positioned text', async () => {
       const data = loadFixture('char-positioned.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       // "Amount" and "due" should be separate words
       expect(doc.text).toMatch(/Amount\s+due/);
@@ -113,7 +113,7 @@ describe('Extractly - Document API', () => {
   describe('markdown output', () => {
     it('produces markdown output', async () => {
       const data = loadFixture('multitext.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       const md = docToMarkdown(doc);
       expect(md.length).toBeGreaterThan(0);
@@ -123,7 +123,7 @@ describe('Extractly - Document API', () => {
 
     it('infers headings from font size', async () => {
       const data = loadFixture('multitext.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       const md = pageToMarkdown(doc.pages[0]);
       expect(md).toMatch(/^#+\s+Large Heading/m);
@@ -131,14 +131,14 @@ describe('Extractly - Document API', () => {
 
     it('returns empty markdown for empty pages', async () => {
       const data = loadFixture('empty.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       expect(docToMarkdown(doc)).toBe('');
     });
 
     it('wraps bold text in ** markers', async () => {
       const data = loadFixture('bold-italic.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
       const md = pageToMarkdown(doc.pages[0]);
 
       expect(md).toContain('**bold**');
@@ -147,7 +147,7 @@ describe('Extractly - Document API', () => {
 
     it('wraps italic text in * markers', async () => {
       const data = loadFixture('bold-italic.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
       const md = pageToMarkdown(doc.pages[0]);
 
       expect(md).toContain('*italic*');
@@ -156,7 +156,7 @@ describe('Extractly - Document API', () => {
 
     it('wraps bold+italic text in *** markers', async () => {
       const data = loadFixture('bold-italic.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
       const md = pageToMarkdown(doc.pages[0]);
 
       expect(md).toContain('***Bold and italic combined***');
@@ -164,7 +164,7 @@ describe('Extractly - Document API', () => {
 
     it('renders annotation links as markdown links', async () => {
       const data = loadFixture('links.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
       const md = pageToMarkdown(doc.pages[0]);
 
       expect(md).toContain('[Example Site](https://example.com)');
@@ -172,48 +172,36 @@ describe('Extractly - Document API', () => {
 
     it('auto-detects plain-text URLs as markdown links', async () => {
       const data = loadFixture('links.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
       const md = pageToMarkdown(doc.pages[0]);
 
       expect(md).toContain('[https://example.org/path](https://example.org/path)');
     });
 
-    it('detects and renders tables as markdown tables', async () => {
-      const data = loadFixture('table.pdf');
-      const doc = await Extractly.load(data);
-      const md = pageToMarkdown(doc.pages[0]);
-
-      expect(md).toContain('| Name');
-      expect(md).toContain('| Widget A');
-      expect(md).toContain('| $25.50');
-      expect(md).toMatch(/\| -+/);
-      expect(md).toMatch(/^#+\s+Product List/m);
-      expect(md).toContain('Total items: 47');
-    });
   });
 
   describe('metadata', () => {
     it('extracts metadata from PDF', async () => {
       const data = loadFixture('metadata.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       expect(doc.metadata.title).toBe('Test Document');
-      expect(doc.metadata.author).toBe('extractly Test Suite');
+      expect(doc.metadata.author).toBe('docutext Test Suite');
       expect(doc.metadata.subject).toBe('Testing metadata extraction');
-      expect(doc.metadata.creator).toBe('extractly fixture generator');
-      expect(doc.metadata.producer).toBe('extractly');
+      expect(doc.metadata.creator).toBe('docutext fixture generator');
+      expect(doc.metadata.producer).toBe('docutext');
     });
 
     it('reports page count', async () => {
       const data = loadFixture('multipage.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       expect(doc.metadata.pageCount).toBe(2);
     });
 
     it('handles missing metadata gracefully', async () => {
       const data = loadFixture('simple.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       expect(doc.metadata.pageCount).toBe(1);
       // Optional fields should be undefined
@@ -224,7 +212,7 @@ describe('Extractly - Document API', () => {
   describe('page iteration', () => {
     it('supports for...of iteration', async () => {
       const data = loadFixture('multipage.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       const pageNumbers: number[] = [];
       for (const page of doc) {
@@ -235,7 +223,7 @@ describe('Extractly - Document API', () => {
 
     it('pages have 1-based numbering', async () => {
       const data = loadFixture('simple.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       expect(doc.pages[0].number).toBe(1);
     });
@@ -244,7 +232,7 @@ describe('Extractly - Document API', () => {
   describe('coordinate transforms (CTM)', () => {
     it('produces correct reading order for flipped-Y coordinate PDFs', async () => {
       const data = loadFixture('flipped-y.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
       const text = doc.pages[0].text;
 
       // "Invoice Title" should come FIRST (it's at the visual top)
@@ -257,7 +245,7 @@ describe('Extractly - Document API', () => {
 
     it('preserves line ordering within flipped-Y content', async () => {
       const data = loadFixture('flipped-y.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
       const text = doc.pages[0].text;
 
       const idx1 = text.indexOf('Line item one');
@@ -269,7 +257,7 @@ describe('Extractly - Document API', () => {
 
     it('applies CTM to markdown output as well', async () => {
       const data = loadFixture('flipped-y.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
       const md = pageToMarkdown(doc.pages[0]);
 
       const titleIndex = md.indexOf('Invoice Title');
@@ -282,8 +270,8 @@ describe('Extractly - Document API', () => {
   describe('xref stream parsing', () => {
     it('loads PDFs with cross-reference streams without error', async () => {
       const data = loadFixture('xref-stream.pdf');
-      // The key assertion: this should NOT throw "extractly: /W array must have 3 entries"
-      const doc = await Extractly.load(data);
+      // The key assertion: this should NOT throw "docutext: /W array must have 3 entries"
+      const doc = await DocuText.load(data);
       expect(doc).toBeDefined();
     });
   });
@@ -291,7 +279,7 @@ describe('Extractly - Document API', () => {
   describe('serialization', () => {
     it('produces JSON-serializable output', async () => {
       const data = loadFixture('metadata.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
 
       const json = doc.toJSON();
       expect(json.metadata.title).toBe('Test Document');
@@ -309,7 +297,7 @@ describe('Extractly - Document API', () => {
   describe('form placeholder stripping', () => {
     it('strips DocuSign placeholders by default', async () => {
       const data = loadFixture('docusign-placeholders.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
       const text = doc.text;
 
       expect(text).not.toContain('\\signature1\\');
@@ -332,7 +320,7 @@ describe('Extractly - Document API', () => {
 
     it('preserves placeholders when stripFormPlaceholders is false', async () => {
       const data = loadFixture('docusign-placeholders.pdf');
-      const doc = await Extractly.load(data, { stripFormPlaceholders: false });
+      const doc = await DocuText.load(data, { stripFormPlaceholders: false });
       const text = doc.text;
 
       expect(text).toContain('\\signature1\\');
@@ -346,7 +334,7 @@ describe('Extractly - Document API', () => {
 
     it('strips placeholders from markdown output by default', async () => {
       const data = loadFixture('docusign-placeholders.pdf');
-      const doc = await Extractly.load(data);
+      const doc = await DocuText.load(data);
       const md = pageToMarkdown(doc.pages[0]);
 
       expect(md).not.toContain('\\signature1\\');
@@ -359,7 +347,7 @@ describe('Extractly - Document API', () => {
 
     it('preserves placeholders in markdown when opted out', async () => {
       const data = loadFixture('docusign-placeholders.pdf');
-      const doc = await Extractly.load(data, { stripFormPlaceholders: false });
+      const doc = await DocuText.load(data, { stripFormPlaceholders: false });
       const md = pageToMarkdown(doc.pages[0]);
 
       expect(md).toContain('\\signature1\\');

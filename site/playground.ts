@@ -1,5 +1,5 @@
-import { Extractly } from 'extractly/browser';
-import { docToMarkdown, pageToMarkdown } from 'extractly/markdown';
+import { DocuText } from 'docutext/browser';
+import { docToMarkdown, pageToMarkdown } from 'docutext/markdown';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
@@ -189,18 +189,31 @@ modeToggle.addEventListener('change', () => {
 });
 
 let copyTimeout: ReturnType<typeof setTimeout> | null = null;
+const copySvg = copyBtn.querySelector('svg')!;
+const tickSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+tickSvg.setAttribute('viewBox', '0 0 24 24');
+tickSvg.setAttribute('fill', 'none');
+tickSvg.setAttribute('stroke', 'currentColor');
+tickSvg.setAttribute('stroke-width', '2');
+tickSvg.setAttribute('stroke-linecap', 'round');
+tickSvg.setAttribute('stroke-linejoin', 'round');
+const tickPath = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+tickPath.setAttribute('points', '20 6 9 17 4 12');
+tickSvg.appendChild(tickPath);
 
 copyBtn.addEventListener('click', () => {
   const text = getActiveText();
   if (!text) return;
 
   navigator.clipboard.writeText(text).then(() => {
+    copyBtn.disabled = true;
     copyBtn.classList.add('copied');
-    copyLabel.textContent = 'Copied!';
+    copySvg.replaceWith(tickSvg);
     if (copyTimeout) clearTimeout(copyTimeout);
     copyTimeout = setTimeout(() => {
+      tickSvg.replaceWith(copySvg);
       copyBtn.classList.remove('copied');
-      copyLabel.textContent = 'Copy';
+      copyBtn.disabled = false;
     }, 1500);
   });
 });
@@ -219,7 +232,7 @@ fileInput.addEventListener('change', async (e) => {
   try {
     const buffer = await file.arrayBuffer();
     const bytes = new Uint8Array(buffer);
-    const doc = Extractly.fromBuffer(bytes);
+    const doc = DocuText.fromBuffer(bytes);
 
     fullText = doc.text;
     fullMd = docToMarkdown(doc);

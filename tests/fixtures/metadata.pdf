@@ -29,10 +29,10 @@ endobj
 
 6 0 obj
 << /Title (Test Document)
-   /Author (extractly Test Suite)
+   /Author (docutext Test Suite)
    /Subject (Testing metadata extraction)
-   /Creator (extractly fixture generator)
-   /Producer (extractly) >>
+   /Creator (docutext fixture generator)
+   /Producer (docutext) >>
 endobj
 
 xref
@@ -47,5 +47,5 @@ xref
 trailer
 << /Size 7 /Root 1 0 R /Info 6 0 R >>
 startxref
-630
+627
 %%EOF

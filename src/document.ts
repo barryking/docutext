@@ -1,5 +1,5 @@
 /**
- * Extractly - the main entry point for extractly.
+ * DocuText - the main entry point for docutext.
  *
  * Provides a high-level API for loading PDFs and extracting text
  * in plain text or markdown format.
@@ -11,7 +11,7 @@ import { decodePdfString } from './encoding/encodings.js';
 import { dictGetString, dictGetName } from './parser/types.js';
 import type { DocumentMetadata, LoadOptions, DocumentData } from './types.js';
 
-export class Extractly {
+export class DocuText {
   /** All pages in the document */
   readonly pages: readonly PDFPage[];
 
@@ -41,7 +41,7 @@ export class Extractly {
   static async load(
     source: string | Uint8Array,
     options?: LoadOptions,
-  ): Promise<Extractly> {
+  ): Promise<DocuText> {
     let data: Uint8Array;
 
     if (typeof source === 'string') {
@@ -52,14 +52,14 @@ export class Extractly {
       data = source;
     }
 
-    return Extractly.fromBuffer(data, options);
+    return DocuText.fromBuffer(data, options);
   }
 
   /**
-   * Synchronously create an Extractly instance from a buffer.
+   * Synchronously create an DocuText instance from a buffer.
    * Useful when you already have the bytes in memory.
    */
-  static fromBuffer(data: Uint8Array, options?: LoadOptions): Extractly {
+  static fromBuffer(data: Uint8Array, options?: LoadOptions): DocuText {
     const parser = new PdfParser(data);
     parser.parse();
 
@@ -76,7 +76,7 @@ export class Extractly {
       (dict, index) => new PDFPage(dict, parser, index + 1, { stripFormPlaceholders, includeInvisibleText }),
     );
 
-    return new Extractly(pages, { ...metadata, pageCount: pages.length }, pageSeparator);
+    return new DocuText(pages, { ...metadata, pageCount: pages.length }, pageSeparator);
   }
 
   /** Full document text (all pages concatenated) */
