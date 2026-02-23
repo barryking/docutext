@@ -31,6 +31,14 @@ describe('encrypted PDF with empty user password', () => {
     expect(doc.pages[0].error).toBeNull();
   });
 
+  it('decrypts and extracts text from AES-256 (V5/R6) encrypted PDF', () => {
+    const data = loadFixture('encrypted-aes256.pdf');
+    const doc = DocuText.fromBuffer(data);
+    expect(doc.pageCount).toBe(1);
+    expect(doc.pages[0].text).toContain('Hello encrypted AES-256 world');
+    expect(doc.pages[0].error).toBeNull();
+  });
+
   it('throws PdfUnsupportedError for truly password-protected PDFs', () => {
     const enc = new TextEncoder();
     const parts = [

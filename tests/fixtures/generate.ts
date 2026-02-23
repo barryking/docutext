@@ -875,6 +875,159 @@ function generateRootInPrevTrailer(): void {
   save('root-in-prev.pdf', enc.encode(parts.join('')));
 }
 
+// ─── 16. PDF encrypted with AES-256 (V=5/R=6) and empty user password ───
+
+async function generateEncryptedAES256(): Promise<void> {
+  const crypto = await import('node:crypto');
+
+  const fileKey = crypto.randomBytes(32);
+  const validationSalt = crypto.randomBytes(8);
+  const keySalt = crypto.randomBytes(8);
+
+  const uHash = crypto.createHash('sha256').update(validationSalt).digest();
+  const uValue = new Uint8Array(48);
+  uValue.set(new Uint8Array(uHash));
+  uValue.set(validationSalt, 32);
+  uValue.set(keySalt, 40);
+
+  const unwrapKey = crypto.createHash('sha256').update(keySalt).digest();
+  const zeroIv = Buffer.alloc(16);
+  const wrapCipher = crypto.createCipheriv('aes-256-cbc', unwrapKey, zeroIv);
+  wrapCipher.setAutoPadding(false);
+  const ueValue = new Uint8Array(wrapCipher.update(fileKey));
+
+  const oValue = crypto.randomBytes(48);
+  const oeValue = crypto.randomBytes(32);
+
+  const permsBlock = Buffer.alloc(16);
+  const pValue = -1052;
+  permsBlock.writeInt32LE(pValue, 0);
+  permsBlock.writeUInt32LE(0xffffffff, 4);
+  permsBlock[8] = 0x54; // 'T' = encrypt metadata
+  permsBlock[9] = 0x61;
+  permsBlock[10] = 0x64;
+  permsBlock[11] = 0x62;
+  crypto.randomBytes(4).copy(permsBlock, 12);
+  const ecbCipher = crypto.createCipheriv('aes-256-ecb', fileKey, null);
+  ecbCipher.setAutoPadding(false);
+  const permsEnc = new Uint8Array(ecbCipher.update(permsBlock));
+
+  function aes256Encrypt(plaintext: Uint8Array): Uint8Array {
+    const iv = crypto.randomBytes(16);
+    const c = crypto.createCipheriv('aes-256-cbc', fileKey, iv);
+    c.setAutoPadding(true);
+    const a = c.update(plaintext);
+    const b = c.final();
+    const result = new Uint8Array(16 + a.length + b.length);
+    result.set(new Uint8Array(iv));
+    result.set(new Uint8Array(a.buffer, a.byteOffset, a.length), 16);
+    result.set(new Uint8Array(b.buffer, b.byteOffset, b.length), 16 + a.length);
+    return result;
+  }
+
+  function escapeBytes(data: Uint8Array): string {
+    let s = '';
+    for (const b of data) {
+      if (b === 0x28 || b === 0x29 || b === 0x5c) {
+        s += '\\' + String.fromCharCode(b);
+      } else if (b < 0x20 || b > 0x7e) {
+        s += '\\' + b.toString(8).padStart(3, '0');
+      } else {
+        s += String.fromCharCode(b);
+      }
+    }
+    return s;
+  }
+
+  const streamPlain = new TextEncoder().encode(
+    'BT\n/F1 12 Tf\n100 700 Td\n(Hello encrypted AES-256 world) Tj\nET',
+  );
+  const encStream = aes256Encrypt(streamPlain);
+
+  // Build PDF as binary chunks with precise offset tracking
+  const chunks: Uint8Array[] = [];
+  let offset = 0;
+  const offsets = new Map<number, number>();
+  const te = new TextEncoder();
+
+  function push(text: string): void {
+    const buf = te.encode(text);
+    chunks.push(buf);
+    offset += buf.length;
+  }
+
+  function pushBin(data: Uint8Array): void {
+    chunks.push(data);
+    offset += data.length;
+  }
+
+  push('%PDF-1.7\n');
+
+  // Obj 1: Catalog
+  offsets.set(1, offset);
+  push('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n\n');
+
+  // Obj 2: Pages
+  offsets.set(2, offset);
+  push('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n\n');
+
+  // Obj 3: Page
+  offsets.set(3, offset);
+  push('3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792]\n' +
+    '   /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n\n');
+
+  // Obj 4: Encrypted content stream
+  offsets.set(4, offset);
+  push(`4 0 obj\n<< /Length ${encStream.length} >>\nstream\n`);
+  pushBin(encStream);
+  push('\nendstream\nendobj\n\n');
+
+  // Obj 5: Font
+  offsets.set(5, offset);
+  push('5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n\n');
+
+  // Obj 6: Encrypt dictionary
+  offsets.set(6, offset);
+  push('6 0 obj\n');
+  push('<< /Type /Encrypt /Filter /Standard\n');
+  push('   /V 5 /R 5 /Length 256\n');
+  push(`   /O (${escapeBytes(oValue)})\n`);
+  push(`   /U (${escapeBytes(uValue)})\n`);
+  push(`   /OE (${escapeBytes(oeValue)})\n`);
+  push(`   /UE (${escapeBytes(ueValue)})\n`);
+  push(`   /P ${pValue}\n`);
+  push(`   /Perms (${escapeBytes(permsEnc)})\n`);
+  push('   /CF << /StdCF << /AuthEvent /DocOpen /CFM /AESV3 /Length 32 >> >>\n');
+  push('   /StmF /StdCF /StrF /StdCF >>\n');
+  push('endobj\n\n');
+
+  const fileIdHex = crypto.randomBytes(16).toString('hex');
+
+  // XRef
+  const xrefOffset = offset;
+  push('xref\n0 7\n');
+  push('0000000000 65535 f \r\n');
+  for (let i = 1; i <= 6; i++) {
+    push(`${String(offsets.get(i)!).padStart(10, '0')} 00000 n \r\n`);
+  }
+
+  // Trailer
+  push(`trailer\n<< /Size 7 /Root 1 0 R /Encrypt 6 0 R /ID [<${fileIdHex}> <${fileIdHex}>] >>\n`);
+  push(`startxref\n${xrefOffset}\n%%EOF\n`);
+
+  // Assemble
+  let totalLen = 0;
+  for (const c of chunks) totalLen += c.length;
+  const result = new Uint8Array(totalLen);
+  let pos = 0;
+  for (const c of chunks) {
+    result.set(c, pos);
+    pos += c.length;
+  }
+
+  save('encrypted-aes256.pdf', result);
+}
+
 // ─── Generate all fixtures ───
 
 console.log('Generating test PDF fixtures...');
@@ -893,4 +1046,5 @@ generateXRefStream();
 generateDocuSignPlaceholders();
 generateBadXRef();
 generateRootInPrevTrailer();
+await generateEncryptedAES256();
 console.log('Done!');

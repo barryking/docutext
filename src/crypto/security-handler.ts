@@ -1,9 +1,11 @@
 /**
- * PDF Standard Security Handler (V1–V4)
+ * PDF Standard Security Handler (V1–V5)
  *
- * Implements the password-based encryption algorithms from the PDF 1.7 spec
- * (ISO 32000-1, sections 7.6.3 and 7.6.4). Supports empty-password PDFs
- * that use RC4 or AES-128-CBC encryption.
+ * Implements the password-based encryption algorithms from the PDF spec:
+ * - V1–V4: ISO 32000-1 sections 7.6.3–7.6.4 (RC4 / AES-128-CBC)
+ * - V5/R6: ISO 32000-2 section 7.6.4.3 (AES-256-CBC)
+ *
+ * Supports empty-password PDFs only.
  */
 
 import type { PdfDict } from '../parser/types.js';
@@ -11,7 +13,11 @@ import {
   dictGet, dictGetNumber, dictGetName, dictGetString,
   isDict, isBool,
 } from '../parser/types.js';
-import { md5, aesCbcDecrypt, hasCryptoImpl } from './crypto-impl.js';
+import {
+  md5, sha256, sha384, sha512,
+  aesCbcDecrypt, aesCbcDecryptNoPad, aesCbcEncryptNoPad,
+  hasCryptoImpl, hasV5Crypto,
+} from './crypto-impl.js';
 
 export interface EncryptionInfo {
   readonly key: Uint8Array;
@@ -162,8 +168,11 @@ export function tryEmptyPassword(
   const u = dictGetString(encryptDict, 'U');
 
   if (filter !== 'Standard') return null;
-  if (v >= 5) return null;
   if (!o || !u) return null;
+
+  if (v >= 5) {
+    return tryEmptyPasswordV5(encryptDict, u);
+  }
 
   const encryptMetadataObj = dictGet(encryptDict, 'EncryptMetadata');
   const encryptMetadata = !(encryptMetadataObj && isBool(encryptMetadataObj) && encryptMetadataObj.value === false);
@@ -197,6 +206,97 @@ export function tryEmptyPassword(
 }
 
 /**
+ * ISO 32000-2 Algorithm 2.B: compute hash for R=6.
+ *
+ * Iterative hash using SHA-256/384/512 and AES-128-CBC encryption rounds.
+ * Runs at least 64 rounds; terminates when last byte of encrypted
+ * result <= (round - 32).
+ */
+function algorithm2B(
+  password: Uint8Array,
+  salt: Uint8Array,
+  userKey: Uint8Array,
+): Uint8Array {
+  let k = sha256(concat(password, salt, userKey));
+
+  for (let round = 0; ; round++) {
+    const base = concat(password, k, userKey);
+    // Repeat base 64 times
+    const k1 = new Uint8Array(base.length * 64);
+    for (let i = 0; i < 64; i++) k1.set(base, i * base.length);
+
+    const aesKey = k.subarray(0, 16);
+    const aesIv = k.subarray(16, 32);
+    const e = aesCbcEncryptNoPad(aesKey, aesIv, k1);
+
+    // Sum first 16 bytes as big-endian unsigned, mod 3
+    let remainder = 0;
+    for (let i = 0; i < 16; i++) {
+      remainder = (remainder * 256 + e[i]) % 3;
+    }
+
+    if (remainder === 0) k = sha256(e);
+    else if (remainder === 1) k = sha384(e);
+    else k = sha512(e);
+
+    if (round >= 63 && e[e.length - 1] <= round - 32) break;
+  }
+
+  return k.subarray(0, 32);
+}
+
+/**
+ * ISO 32000-2 Algorithm 2.A: verify empty user password for V=5/R=6.
+ *
+ * /U is >= 48 bytes: first 32 = hash, 32–39 = validation salt, 40–47 = key salt.
+ * /UE is 32 bytes: the file encryption key wrapped with AES-256-CBC.
+ */
+function tryEmptyPasswordV5(
+  encryptDict: PdfDict,
+  u: Uint8Array,
+): EncryptionInfo | null {
+  if (!hasV5Crypto()) return null;
+  if (u.length < 48) return null;
+
+  const ue = dictGetString(encryptDict, 'UE');
+  if (!ue || ue.length < 32) return null;
+
+  const r = dictGetNumber(encryptDict, 'R') ?? 0;
+  const validationSalt = u.subarray(32, 40);
+  const keySalt = u.subarray(40, 48);
+  const uHash = u.subarray(0, 32);
+
+  const emptyPassword = new Uint8Array(0);
+
+  // R=5 uses plain SHA-256, R=6 uses Algorithm 2.B
+  const computedHash = r >= 6
+    ? algorithm2B(emptyPassword, validationSalt, new Uint8Array(0))
+    : sha256(concat(emptyPassword, validationSalt));
+
+  if (!arraysEqual(computedHash.subarray(0, 32), uHash)) return null;
+
+  // Unwrap the file encryption key from /UE
+  const unwrapHash = r >= 6
+    ? algorithm2B(emptyPassword, keySalt, new Uint8Array(0))
+    : sha256(concat(emptyPassword, keySalt));
+
+  const zeroIv = new Uint8Array(16);
+  let fileKey: Uint8Array;
+  try {
+    fileKey = aesCbcDecryptNoPad(unwrapHash, zeroIv, ue.subarray(0, 32));
+  } catch {
+    return null;
+  }
+
+  if (fileKey.length !== 32) return null;
+
+  const encryptMetadataObj = dictGet(encryptDict, 'EncryptMetadata');
+  const encryptMetadata = !(encryptMetadataObj && isBool(encryptMetadataObj) && encryptMetadataObj.value === false);
+
+  return { key: fileKey, keyLength: 32, v: 5, r, useAes: true, encryptMetadata };
+}
+
+/**
  * PDF spec Algorithm 1: derive a per-object encryption key.
  */
 export function objectKey(
@@ -223,7 +323,9 @@ export function objectKey(
 }
 
 /**
- * Decrypt stream data using the per-object key.
+ * Decrypt stream or string data.
+ * V5 uses the global file encryption key directly (AES-256-CBC).
+ * V1–V4 derive a per-object key first.
  */
 export function decryptData(
   encInfo: EncryptionInfo,
@@ -232,6 +334,19 @@ export function decryptData(
   gen: number,
 ): Uint8Array {
   if (data.length === 0) return data;
+
+  if (encInfo.v >= 5) {
+    if (data.length < 16) return data;
+    const iv = data.subarray(0, 16);
+    const ciphertext = data.subarray(16);
+    if (ciphertext.length === 0) return new Uint8Array(0);
+    try {
+      return aesCbcDecrypt(encInfo.key, iv, ciphertext);
+    } catch {
+      return data;
+    }
+  }
+
   const key = objectKey(encInfo.key, objNum, gen, encInfo.useAes);
   if (encInfo.useAes) {
     if (data.length < 16) return data;

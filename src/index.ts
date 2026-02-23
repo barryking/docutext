@@ -18,7 +18,7 @@
  */
 
 import { inflateSync } from 'node:zlib';
-import { createHash, createDecipheriv } from 'node:crypto';
+import { createHash, createDecipheriv, createCipheriv } from 'node:crypto';
 import { setInflate } from './stream/inflate.js';
 import { setCryptoImpl } from './crypto/crypto-impl.js';
 
@@ -32,10 +32,14 @@ function nodeInflate(data: Uint8Array): Uint8Array {
 
 setInflate(nodeInflate);
 
+function aesCbcAlgo(key: Uint8Array): string {
+  return key.length === 32 ? 'aes-256-cbc' : 'aes-128-cbc';
+}
+
 setCryptoImpl(
   (data) => new Uint8Array(createHash('md5').update(data).digest()),
   (key, iv, data) => {
-    const decipher = createDecipheriv('aes-128-cbc', key, iv);
+    const decipher = createDecipheriv(aesCbcAlgo(key), key, iv);
     decipher.setAutoPadding(true);
     const a = decipher.update(data);
     const b = decipher.final();
@@ -43,6 +47,25 @@ setCryptoImpl(
     result.set(new Uint8Array(a.buffer, a.byteOffset, a.length));
     result.set(new Uint8Array(b.buffer, b.byteOffset, b.length), a.length);
     return result;
+  },
+  {
+    sha256: (data) => new Uint8Array(createHash('sha256').update(data).digest()),
+    sha384: (data) => new Uint8Array(createHash('sha384').update(data).digest()),
+    sha512: (data) => new Uint8Array(createHash('sha512').update(data).digest()),
+    aesCbcDecryptNoPad: (key, iv, data) => {
+      const d = createDecipheriv(aesCbcAlgo(key), key, iv);
+      d.setAutoPadding(false);
+      const r = d.update(data);
+      d.final();
+      return new Uint8Array(r.buffer, r.byteOffset, r.length);
+    },
+    aesCbcEncryptNoPad: (key, iv, data) => {
+      const c = createCipheriv(aesCbcAlgo(key), key, iv);
+      c.setAutoPadding(false);
+      const r = c.update(data);
+      c.final();
+      return new Uint8Array(r.buffer, r.byteOffset, r.length);
+    },
   },
 );
 
